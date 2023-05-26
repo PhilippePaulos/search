@@ -1,7 +1,8 @@
 import json
 
+import numpy as np
 import pandas as pd
-from haversine import haversine, Unit
+from haversine import Unit, haversine_vector
 
 from search.logging.logs import logging_setup, log_process_time
 from utils.common import display_dataframe
@@ -12,8 +13,7 @@ class SearchProcess:
     def __init__(self, latitude: float, longitude: float, radius: int) -> None:
         super().__init__()
         self.log = logging_setup()
-        self.latitude = latitude
-        self.longitude = longitude
+        self.centroid_array = np.array([latitude, longitude])
         self.radius = radius
 
     @log_process_time
@@ -50,18 +50,30 @@ class SearchProcess:
 
     @log_process_time
     def compute_distances(self, df: pd.DataFrame):
-        centroid = (self.latitude, self.longitude)
+        """
+        Compute the haversine distances between the centroid and the coordinates in the DataFrame.
 
-        # Compute haversine distances
-        df["distance"] = df.apply(lambda row: haversine(centroid, (row["longitude"], row["latitude"]),
-                                                        unit=Unit.METERS),
-                                  axis=1)
+        :param df: DataFrame containing latitude and longitude columns.
+        :type df: pd.DataFrame
+
+        :return: DataFrame with added 'distance' column, filtered based on the given radius.
+        :rtype: pd.DataFrame
+        """
+        # Create arrays for the latitude and longitude columns
+        latitudes = df['latitude'].values
+        longitudes = df['longitude'].values
+        coordinates = np.column_stack((longitudes, latitudes))
+
+        # Compute haversine distances using haversine_vector function
+        distances = haversine_vector(self.centroid_array, coordinates,
+                                     unit=Unit.METERS,
+                                     comb=True)
 
         # Round distances to 2 decimal places
-        df["distance"] = df["distance"].round(2)
+        distances = np.round(distances, 2)
 
         # Filter rows where distance is less than or equal to radius
-        df = df[df["distance"] <= self.radius]
+        mask = distances <= self.radius
+        df = df[mask]
 
         return df
-
