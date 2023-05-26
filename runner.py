@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from search.process.process import SearchProcess
+
 # Define the parameters and their types
 PARAMS = {
     "latitude": float,
@@ -49,10 +51,8 @@ def run():
     args = sys.argv[1:]
     parsed_args = parse_params(args)
 
-    # Print the arguments
-    print(f"Latitude: {parsed_args.latitude}")
-    print(f"Longitude: {parsed_args.longitude}")
-    print(f"Radius: {parsed_args.radius}")
+    search_process = SearchProcess(parsed_args.latitude, parsed_args.longitude, parsed_args.radius)
+    search_process.process()
 
 
 if __name__ == "__main__":
