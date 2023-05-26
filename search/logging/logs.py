@@ -48,11 +48,14 @@ def log_process_time(func):
     def wrapper(self, *args, **kwargs):
         logger = self.log if hasattr(self, 'log') else logging.getLogger()
         logger.info(f"Starting {func.__name__}()")
+
         start_time = time.time()
         result = func(self, *args, **kwargs)
         end_time = time.time()
-        execution_time = end_time - start_time
-        logger.info(f"Process {func.__name__}() done. Execution time: {execution_time:.2f} seconds")
+
+        execution_time_ms = (end_time - start_time) * 1000
+        logger.info(f"Process {func.__name__}() done. Execution time: {execution_time_ms:.2f} milliseconds")
+
         return result
 
     return wrapper
