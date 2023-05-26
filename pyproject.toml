@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "search_stations"
+name = "search"
 version = "0.0.1"
-description = "Search stations"
+description = "Search for places around"
 authors = ["Philippe Paulos"]
 readme = "README.md"
 

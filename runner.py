@@ -44,9 +44,6 @@ def parse_params(args):
 def run():
     """
     Execute the search based on the provided command-line arguments.
-
-    :param args: The command-line arguments.
-    :type args: List[str]
     """
     # Parse the command-line arguments
     args = sys.argv[1:]
