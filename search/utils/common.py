@@ -15,10 +15,9 @@ def display_dataframe(df: pd.DataFrame, cols_to_show: List[str] = None):
     :param cols_to_show: The list of columns to be displayed.
     :type cols_to_show: List[str]
     """
-    # Iterate over the DataFrame rows
     if not cols_to_show:
         cols_to_show = list(df.columns)
+
     for _, row in df[cols_to_show].iterrows():
-        # Format each row's output
         row_str = ', '.join(f'{col}: {row[col]}' for col in cols_to_show)
         print(row_str)

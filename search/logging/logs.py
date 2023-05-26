@@ -31,19 +31,21 @@ def logging_setup(level=DEFAULT_LEVEL, log_format=DEFAULT_FORMAT) -> Logger:
 
 def log_process_time(func):
     """
-    Decorator function to log the start and completion of a process, including execution time.
+    Decorator function to log the start and completion of a processes, including execution time.
 
-    Usage:
-    @log_process
-    def my_function(self, *args, **kwargs):
-        ...
+    :Usage:
+
+    .. code-block:: python
+
+        @log_process_time
+        def my_function(self, *args, **kwargs):
+            ...
 
     :param func: The function to be decorated.
     :type func: function
     :return: The decorated function.
     :rtype: function
     """
-
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         logger = self.log if hasattr(self, 'log') else logging.getLogger()

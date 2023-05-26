@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from search.process.process import SearchProcess
+from search.processes.search_process import SearchProcess
 
 # Define the parameters and their types
 PARAMS = {
