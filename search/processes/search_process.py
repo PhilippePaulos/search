@@ -1,7 +1,7 @@
 import json
 import os
 import pickle
-from typing import Union, List
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -14,142 +14,151 @@ from search.utils.fs import get_resources_file
 
 
 class SearchProcess:
-    def __init__(self, latitude: float, longitude: float, radius: int) -> None:
+    def __init__(self, latitude: float, longitude: float, radius: int,
+                 original_file_path: str = get_resources_file("restaurants_paris.geojson"),
+                 cleansed_data_path: str = get_resources_file("restaurants_paris_cleansed.json"),
+                 kdtree_path: str = get_resources_file("kdtree.pkl")) -> None:
         super().__init__()
         self.log = logging_setup()
         self.centroid_array = np.array([latitude, longitude])
         self.radius = radius
+        self.original_file_path = original_file_path
+        self.cleansed_data_path = cleansed_data_path
+        self.kdtree_path = kdtree_path
 
     @log_process_time
     def process(self) -> None:
         """
-        Main method that handles data loading, preprocessing and calculation of restaurant distances.
+        Orchestrates the data loading, preprocessing and calculation of restaurant distances.
 
-        This method performs the following steps:
-        1. Load cleaned restaurant data from a JSON file if it exists. If not, load the original data, cleanse it, and save it back as JSON.
-        2. Load a pre-built KDTree from a pickle file if it exists. If not, build the KDTree from the loaded data and save it.
-        3. Compute and display the distances from the centroid to the restaurants using the KDTree.
+        This function executes the following operations:
+        1. Checks if preprocessed data (cleaned restaurant data and KDTree) is available. If so, this data is loaded.
+        2. If preprocessed data is not available, it loads the raw data, cleanses it, builds a KDTree, and saves these for future use.
+        3. Computes the distances from the provided centroid to the restaurants using the KDTree and displays the result.
+
+        Logs the start of each major operation for performance profiling.
         """
 
-        cleansed_path = get_resources_file('restaurants_paris_cleansed.json')
-        tree_path = get_resources_file('kdtree.pkl')
-
-        # Load or create cleansed data
-        if os.path.exists(cleansed_path):
-            restaurants_df = self._load_data_cleaned(cleansed_path, load_as_df=True)
+        # Load or create precomputed data
+        if os.path.exists(self.cleansed_data_path) and os.path.exists(self.kdtree_path):
+            self.log.info("Loading precomputed data ...")
+            restaurants_df, kdtree = self._load_precomputed_data(self.cleansed_data_path, self.kdtree_path)
         else:
-            restaurants_df = self._load_data(cleansed_path, load_as_df=True)
-            restaurants_df.to_json(cleansed_path, orient='records')
+            restaurants_df, kdtree,  = self._prepare_data()
 
-        # Load or create KDTree
-        if os.path.exists(tree_path):
-            kdtree = self._load_tree()
-        else:
-            kdtree = self._save_tree(restaurants_df, tree_path)
-
+        self.log.info("Computing distances ...")
         # Compute and display distances using KDTree
-        display_dataframe(self.compute_distances_tree(restaurants_df, kdtree))
+        display_dataframe(self.compute_distances(restaurants_df, kdtree))
 
     @log_process_time
-    def _load_data(self, file_path: str, load_as_df=False) -> Union[pd.DataFrame, List[dict]]:
+    def _prepare_data(self) -> Tuple[pd.DataFrame, KDTree]:
         """
-        Load restaurant data from a geojson file.
+        Prepares data for processing.
+
+        This function performs the following steps:
+        1. Loads raw data from the original file path.
+        2. Cleanses the loaded data (e.g., filters for "Point" geometry types).
+        3. Saves the cleansed data as a JSON file.
+        4. Constructs a KDTree from the cleansed data and saves it to a specified path.
+
+        :return: The constructed KDTree and the cleansed data as a pandas DataFrame.
+        :rtype: Tuple[KDTree, pd.DataFrame]
+        """
+        self.log.info("Precomputed data not found. Loading original data...")
+        raw_data = self._load_raw_data(self.original_file_path)
+        restaurants_df = self._cleanse_data(raw_data)
+        self._save_data(restaurants_df, self.cleansed_data_path)
+        kdtree = self._save_tree(restaurants_df, self.kdtree_path)
+        return restaurants_df, kdtree
+
+    @log_process_time
+    def _load_raw_data(self, file_path: str) -> pd.DataFrame:
+        """
+        Loads restaurant data from a geojson file into a pandas DataFrame.
 
         :param file_path: Path to the geojson file.
         :type file_path: str
-        :param load_as_df: Determines if data is returned as pandas DataFrame. Default is False.
-        :type load_as_df: bool
-        :return: Restaurant data as DataFrame or list of dictionaries.
-        :rtype: Union[pd.DataFrame, List[dict]]
+        :return: The loaded raw data as a pandas DataFrame.
+        :rtype: pd.DataFrame
         """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File {file_path} not found")
+
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)["features"]
+        # coordinates are in opposite order
         data_list = [
             {
                 "name": d["properties"]["name"],
-                "longitude": d["geometry"]["coordinates"][1],
-                "latitude": d["geometry"]["coordinates"][0],
+                "latitude": d["geometry"]["coordinates"][1],
+                "longitude": d["geometry"]["coordinates"][0],
+                "type": d["geometry"]["type"]
             }
             for d in data
-            if d["geometry"]["type"] == "Point"
         ]
-        if load_as_df:
-            return pd.DataFrame(data_list)
-        return data_list
+        return pd.DataFrame(data_list)
+
+    def _cleanse_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Cleanses restaurant data, filtering for "Point" geometry types.
+
+        :param df: DataFrame to cleanse.
+        :type df: pd.DataFrame
+        :return: The cleansed data as a pandas DataFrame.
+        :rtype: pd.DataFrame
+        """
+        return df[df["type"] == "Point"].copy()
+
+    def _save_data(self, df: pd.DataFrame, path: str) -> None:
+        """
+        Saves a DataFrame to a JSON file at the specified path.
+
+        :param df: DataFrame to save.
+        :type df: pd.DataFrame
+        :param path: Path to the JSON file where the DataFrame will be saved.
+        :type path: str
+        """
+        df.to_json(path, orient="records")
 
     @log_process_time
     def _save_tree(self, df: pd.DataFrame, path: str) -> KDTree:
         """
-        Save a KDTree built from the latitude and longitude columns of the DataFrame.
+        Constructs a KDTree from the latitude and longitude columns of the provided DataFrame. The resulting KDTree
+        is saved to a file at the provided path.
 
-        :param df: DataFrame containing latitude and longitude columns.
+        :param df: DataFrame containing "latitude" and "longitude" columns.
         :type df: pd.DataFrame
-        :param path: File path to save the KDTree.
+        :param path: Path at which to save the KDTree.
         :type path: str
-        :return: The KDTree object.
+        :return: The constructed KDTree.
         :rtype: KDTree
         """
-        coordinates = df[['latitude', 'longitude']].values
+        coordinates = df[["latitude", "longitude"]].values
         kdtree = KDTree(coordinates)
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             pickle.dump(kdtree, f)
         return kdtree
 
     @log_process_time
-    def _load_tree(self) -> KDTree:
+    def _load_precomputed_data(self, cleansed_path, tree_path) -> Tuple[pd.DataFrame, KDTree]:
         """
-        Load a KDTree from a saved file.
+        Loads cleansed restaurant data and a pre-built KDTree from given file paths.
 
-        :return: The loaded KDTree object.
-        :rtype: KDTree
+        :param cleansed_path: Path to cleansed restaurant data JSON file.
+        :type cleansed_path: str
+        :param tree_path: Path to pre-built KDTree pickle file.
+        :type tree_path: str
+        :return: Loaded data as a DataFrame and the KDTree.
+        :rtype: Tuple[pd.DataFrame, KDTree]
         """
-        with open('resources/kdtree.pkl', 'rb') as f:
+        restaurants_df = pd.read_json(cleansed_path)
+
+        with open(tree_path, "rb") as f:
             kdtree = pickle.load(f)
-        return kdtree
+        return restaurants_df, kdtree
 
     @log_process_time
-    def _load_data_cleaned(self, file_path, load_as_df=False) -> Union[pd.DataFrame, List[dict]]:
-        """
-        Load cleaned data from a JSON file.
-
-        :param file_path: Path to the JSON file to be loaded.
-        :type file_path: str
-        :param load_as_df: If True, loads data as a DataFrame. If False, returns a list of dictionaries. Default is False.
-        :type load_as_df: bool
-        :return: Loaded data in the format of a DataFrame or a list of dictionaries.
-        :rtype: Union[pd.DataFrame, List[dict]]
-        """
-        df = pd.read_json(file_path)
-        if load_as_df:
-            return df
-        return df.to_dict('records')
-
-    @log_process_time
-    def compute_distances(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Compute the haversine distances between the centroid and the coordinates in the DataFrame.
-
-        :param df: DataFrame containing latitude and longitude columns.
-        :type df: pd.DataFrame
-
-        :return: DataFrame with added 'distance' column, filtered based on the given radius.
-        :rtype: pd.DataFrame
-        """
-        # Extract coordinates and compute haversine distances
-        coordinates = df[['longitude', 'latitude']].values
-        distances = haversine_vector(self.centroid_array, coordinates,
-                                     unit=Unit.METERS,
-                                     comb=True)
-
-        # Round distances to 2 decimal places and add to DataFrame
-        df = df.assign(distance=np.round(distances, 2))
-
-        # Filter rows where distance is less than or equal to radius
-        df = df.loc[df['distance'] <= self.radius]
-        return df
-
-    @log_process_time
-    def compute_distances_tree(self, df: pd.DataFrame, kdtree: KDTree) -> pd.DataFrame:
+    def compute_distances(self, df: pd.DataFrame, kdtree: KDTree) -> pd.DataFrame:
         """
         Compute distances using a KDTree data structure and filter out restaurants based on the search radius.
 
@@ -158,10 +167,10 @@ class SearchProcess:
         :param kdtree: KDTree data structure for nearest-neighbor queries.
         :type kdtree: KDTree
 
-        :return: DataFrame with added 'distance' column, filtered based on the given radius.
+        :return: DataFrame with added "distance" column, filtered based on the given radius.
         :rtype: pd.DataFrame
         """
-        point = np.array([self.centroid_array[1], self.centroid_array[0]])
+        point = np.array([self.centroid_array[0], self.centroid_array[1]])
 
         # Convert the radius from meters to degrees and add buffer space
         radius_in_degrees = self.radius / 110574 + 0.01
@@ -170,7 +179,7 @@ class SearchProcess:
         indices = kdtree.query_ball_point(point, radius_in_degrees)
         restaurants_near_centroid = df.iloc[indices].copy()
 
-        coordinates = restaurants_near_centroid[['longitude', 'latitude']].values
+        coordinates = restaurants_near_centroid[["latitude", "longitude"]].values
         distances = haversine_vector(self.centroid_array, coordinates,
                                      unit=Unit.METERS,
                                      comb=True)

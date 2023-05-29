@@ -25,7 +25,7 @@ from runner import parse_params
         (["latitude=48.0", "longitude=2.0", "radius=100", "invalid=abc"], True),
     ],
 )
-def test_parse_params(args, exception_expected):
+def test__parse_params(args, exception_expected):
     if exception_expected:
         with pytest.raises(ValueError):
             parse_params(args)
