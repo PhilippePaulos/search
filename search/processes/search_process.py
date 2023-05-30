@@ -48,7 +48,8 @@ class SearchProcess:
 
         self.log.info("Computing distances ...")
         # Compute and display distances using KDTree
-        display_dataframe(self.compute_distances(restaurants_df, kdtree))
+        nearby_restaurants_df = self.compute_distances(restaurants_df, kdtree).sort_values("distance")
+        display_dataframe(nearby_restaurants_df)
 
     @log_process_time
     def _prepare_data(self) -> Tuple[pd.DataFrame, KDTree]:
