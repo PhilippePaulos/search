@@ -42,20 +42,20 @@ Replace `<value>` with the appropriate numbers for latitude, longitude, and radi
 
 ```bash
 $ poetry run python runner.py latitude=48.8319929 longitude=2.3245488 radius=100
-[INFO] 2023-05-30 10:23:51,715 - logs - logs.py : Starting process()
-[INFO] 2023-05-30 10:23:51,715 - search_process - search_process.py : Loading precomputed data ...                         
-[INFO] 2023-05-30 10:23:51,715 - logs - logs.py : Starting _load_precomputed_data()                                        
-[INFO] 2023-05-30 10:23:51,731 - logs - logs.py : Process _load_precomputed_data() done. Execution time: 15.00 milliseconds
-[INFO] 2023-05-30 10:23:51,731 - search_process - search_process.py : Computing distances ...                              
-[INFO] 2023-05-30 10:23:51,732 - logs - logs.py : Starting compute_distances()                                             
-[INFO] 2023-05-30 10:23:51,733 - logs - logs.py : Process compute_distances() done. Execution time: 1.00 milliseconds      
-name: Le Saut du Crapaud, latitude: 48.8315833, longitude: 2.3242762, type: Point, distance: 49.72                         
-name: Lida, latitude: 48.8313102, longitude: 2.324098, type: Point, distance: 82.77                                        
-name: Mikopüy, latitude: 48.8318918, longitude: 2.3247313, type: Point, distance: 17.46                                    
-name: Le Severo, latitude: 48.8319929, longitude: 2.3245488, type: Point, distance: 0.0                                    
-name: Sushi House, latitude: 48.8319258, longitude: 2.3247528, type: Point, distance: 16.69                                
-name: Au P'tit Zinc, latitude: 48.8323129, longitude: 2.3247495, type: Point, distance: 38.5                               
-name: Chez Toni, latitude: 48.8321391, longitude: 2.3246523, type: Point, distance: 17.94                                  
+[INFO] 2023-05-30 11:16:36,862 - logs - logs.py : Starting process()
+[INFO] 2023-05-30 11:16:36,862 - search_process - search_process.py : Loading precomputed data ...
+[INFO] 2023-05-30 11:16:36,862 - logs - logs.py : Starting _load_precomputed_data()
+[INFO] 2023-05-30 11:16:36,886 - logs - logs.py : Process _load_precomputed_data() done. Execution time: 24.35 milliseconds
+[INFO] 2023-05-30 11:16:36,886 - search_process - search_process.py : Computing distances ...
+[INFO] 2023-05-30 11:16:36,886 - logs - logs.py : Starting compute_distances()
+[INFO] 2023-05-30 11:16:36,888 - logs - logs.py : Process compute_distances() done. Execution time: 1.00 milliseconds
+[INFO] 2023-05-30 11:16:36,890 - logs - logs.py : Process process() done. Execution time: 28.32 milliseconds
+name: Le Severo, latitude: 48.8319929, longitude: 2.3245488, type: Point, distance: 0.0
+name: Sushi House, latitude: 48.8319258, longitude: 2.3247528, type: Point, distance: 16.69
+name: Mikopüy, latitude: 48.8318918, longitude: 2.3247313, type: Point, distance: 17.46
+name: Chez Toni, latitude: 48.8321391, longitude: 2.3246523, type: Point, distance: 17.94
+name: Au P'tit Zinc, latitude: 48.8323129, longitude: 2.3247495, type: Point, distance: 38.5
 name: Félicie, latitude: 48.832418, longitude: 2.3247172, type: Point, distance: 48.85
-[INFO] 2023-05-30 10:23:51,736 - logs - logs.py : Process process() done. Execution time: 21.00 milliseconds
+name: Le Saut du Crapaud, latitude: 48.8315833, longitude: 2.3242762, type: Point, distance: 49.72
+name: Lida, latitude: 48.8313102, longitude: 2.324098, type: Point, distance: 82.77
 ```
