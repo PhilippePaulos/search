@@ -3,7 +3,7 @@
 ## Overview
 
 This Python project efficiently calculates and displays distances from a given point to nearby restaurants using a KDTree.
-The main functionality is provided by the `SearchProcess` class, which handles data loading, preprocessing, and distance calculations.
+The main functionality is provided by the [`SearchProcess`](https://github.com/PhilippePaulos/search/blob/main/search/processes/search_process.py) class, which handles data loading, preprocessing, and distance calculations.
 
 ## Performance Choices
 
@@ -41,7 +41,7 @@ poetry run python -m runner latitude=<value> longitude=<value> radius=<value>
 Replace `<value>` with the appropriate numbers for latitude, longitude, and radius. For example:
 
 ```bash
-$ poetry run python runner.py latitude=48.8319929 longitude=2.3245488 radius=100
+$ poetry run python -m runner latitude=48.8319929 longitude=2.3245488 radius=100
 [INFO] 2023-05-30 11:16:36,862 - logs - logs.py : Starting process()
 [INFO] 2023-05-30 11:16:36,862 - search_process - search_process.py : Loading precomputed data ...
 [INFO] 2023-05-30 11:16:36,862 - logs - logs.py : Starting _load_precomputed_data()
