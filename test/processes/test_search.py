@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -176,3 +177,43 @@ def test_compute_distances(search_process, df, kdtree, centroid, radius, expecte
     result = search_process.compute_distances(df, kdtree)
     assert len(result) == expected
     assert "distance" in result.columns
+
+
+# Parameters for process testing
+params = [
+    # data_exists, latitude, longitude, radius
+    (True, 48.8566, 2.3522, 500),  # Case when preprocessed data exists
+    (False, 48.8566, 2.3522, 500),  # Case when preprocessed data doesn't exist
+]
+
+
+@pytest.mark.parametrize("data_exists,latitude,longitude,radius", params)
+def test__process(data_exists, latitude, longitude, radius):
+    mock_computed_dataframe = pd.DataFrame({
+        "name": ["Restaurant 1", "Restaurant 2"],
+        "latitude": [48.8566, 48.8560],
+        "longitude": [2.3522, 2.3520],
+        "distance": [30, 31]
+    })
+    with patch("os.path.exists", return_value=data_exists) as mock_exists, \
+            patch.object(SearchProcess, "_load_precomputed_data",
+                         return_value=("mock_dataframe", "mock_kdtree")) as mock_load, \
+            patch.object(SearchProcess, "_prepare_data",
+                         return_value=("mock_dataframe", "mock_kdtree")) as mock_prepare, \
+            patch.object(SearchProcess, "compute_distances", return_value=mock_computed_dataframe) as mock_compute, \
+            patch("search.processes.search_process.display_dataframe") as mock_display:
+
+        search_process = SearchProcess(latitude, longitude, radius)
+
+        search_process.process()
+
+        mock_exists.assert_called()
+        if data_exists:
+            mock_load.assert_called_once()
+            mock_prepare.assert_not_called()
+        else:
+            mock_load.assert_not_called()
+            mock_prepare.assert_called_once()
+
+        mock_compute.assert_called_once_with("mock_dataframe", "mock_kdtree")
+        mock_display.assert_called()
